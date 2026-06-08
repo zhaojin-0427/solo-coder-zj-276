@@ -41,6 +41,7 @@ export const careLogsAPI = {
   create: (data) => api.post('/care-logs/', data),
   update: (id, data) => api.put(`/care-logs/${id}/`, data),
   delete: (id) => api.delete(`/care-logs/${id}/`),
+  summary: (params = {}) => api.get('/care-logs/summary/', { params }),
 }
 
 export const calendarAPI = {

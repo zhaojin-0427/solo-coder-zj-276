@@ -138,8 +138,9 @@ class PlantViewSet(viewsets.ModelViewSet):
 
 
 class CareLogViewSet(viewsets.ModelViewSet):
-    queryset = CareLog.objects.select_related('plant').all()
+    queryset = CareLog.objects.select_related('plant', 'plant__species').all()
     serializer_class = CareLogSerializer
+    pagination_class = None
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -158,6 +159,27 @@ class CareLogViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__lte=end_date)
 
         return queryset
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        queryset = self.get_queryset()
+        total = queryset.count()
+        water_count = queryset.filter(care_type='water').count()
+        fertilize_count = queryset.filter(care_type='fertilize').count()
+        repot_count = queryset.filter(care_type='repot').count()
+        prune_count = queryset.filter(care_type='prune').count()
+        other_count = queryset.filter(care_type='other').count()
+        total_cost = queryset.aggregate(total=Sum('cost'))['total'] or 0
+
+        return Response({
+            'total_count': total,
+            'water_count': water_count,
+            'fertilize_count': fertilize_count,
+            'repot_count': repot_count,
+            'prune_count': prune_count,
+            'other_count': other_count,
+            'total_cost': round(float(total_cost), 2),
+        })
 
 
 class WateringCalendarView(APIView):

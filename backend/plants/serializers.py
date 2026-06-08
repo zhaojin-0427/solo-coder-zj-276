@@ -27,6 +27,8 @@ class LocationSerializer(serializers.ModelSerializer):
 
 class CareLogSerializer(serializers.ModelSerializer):
     care_type_display = serializers.CharField(source='get_care_type_display', read_only=True)
+    plant_name = serializers.CharField(source='plant.name', read_only=True)
+    plant_species_name = serializers.CharField(source='plant.species.name', read_only=True)
 
     class Meta:
         model = CareLog

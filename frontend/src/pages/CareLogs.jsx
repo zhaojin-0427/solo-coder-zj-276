@@ -15,6 +15,12 @@ function CareLogs() {
   const navigate = useNavigate()
   const [logs, setLogs] = useState([])
   const [plants, setPlants] = useState([])
+  const [summary, setSummary] = useState({
+    total_count: 0,
+    water_count: 0,
+    fertilize_count: 0,
+    total_cost: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [filters, setFilters] = useState({ plant: '', type: '', start_date: '', end_date: '' })
@@ -36,12 +42,14 @@ function CareLogs() {
       Object.keys(filters).forEach(key => {
         if (filters[key]) params[key] = filters[key]
       })
-      const [logsRes, plantsRes] = await Promise.all([
+      const [logsRes, plantsRes, summaryRes] = await Promise.all([
         careLogsAPI.list(params),
         plantsAPI.list(),
+        careLogsAPI.summary(params),
       ])
       setLogs(logsRes.data.results || logsRes.data)
       setPlants(plantsRes.data.results || plantsRes.data)
+      setSummary(summaryRes.data)
     } catch (err) {
       console.error('加载数据失败:', err)
     } finally {
@@ -81,8 +89,6 @@ function CareLogs() {
     }
   }
 
-  const totalCost = logs.reduce((sum, log) => sum + (parseFloat(log.cost) || 0), 0).toFixed(2)
-
   return (
     <div>
       <div className="page-header">
@@ -97,19 +103,19 @@ function CareLogs() {
 
       <div className="grid grid-4" style={{ marginBottom: 24 }}>
         <div className="card stats-card">
-          <div className="stats-value">{logs.length}</div>
+          <div className="stats-value">{summary.total_count}</div>
           <div className="stats-label">总记录数</div>
         </div>
         <div className="card stats-card">
-          <div className="stats-value">{logs.filter(l => l.care_type === 'water').length}</div>
+          <div className="stats-value">{summary.water_count}</div>
           <div className="stats-label">浇水次数</div>
         </div>
         <div className="card stats-card">
-          <div className="stats-value">{logs.filter(l => l.care_type === 'fertilize').length}</div>
+          <div className="stats-value">{summary.fertilize_count}</div>
           <div className="stats-label">施肥次数</div>
         </div>
         <div className="card stats-card">
-          <div className="stats-value">¥{totalCost}</div>
+          <div className="stats-value">¥{summary.total_cost}</div>
           <div className="stats-label">养护总花费</div>
         </div>
       </div>
@@ -162,44 +168,49 @@ function CareLogs() {
             <p>暂无养护记录</p>
           </div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>日期</th>
-                <th>植物</th>
-                <th>类型</th>
-                <th>花费</th>
-                <th>备注</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => {
-                const typeInfo = careTypeMap[log.care_type] || careTypeMap.other
-                return (
-                  <tr key={log.id}>
-                    <td>{log.date}</td>
-                    <td
-                      style={{ cursor: 'pointer', color: 'var(--primary-dark)', fontWeight: 500 }}
-                      onClick={() => navigate(`/plants/${log.plant}`)}
-                    >
-                      {log.plant?.name || `植物 #${log.plant}`}
-                    </td>
-                    <td>
-                      <span className={`badge ${typeInfo.class}`}>{typeInfo.text}</span>
-                    </td>
-                    <td>{log.cost > 0 ? `¥${log.cost}` : '-'}</td>
-                    <td>{log.notes || '-'}</td>
-                    <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(log.id)}>
-                        删除
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <>
+            <table>
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>植物</th>
+                  <th>类型</th>
+                  <th>花费</th>
+                  <th>备注</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => {
+                  const typeInfo = careTypeMap[log.care_type] || careTypeMap.other
+                  return (
+                    <tr key={log.id}>
+                      <td>{log.date}</td>
+                      <td
+                        style={{ cursor: 'pointer', color: 'var(--primary-dark)', fontWeight: 500 }}
+                        onClick={() => navigate(`/plants/${log.plant}`)}
+                      >
+                        {log.plant_name || `植物 #${log.plant}`}
+                      </td>
+                      <td>
+                        <span className={`badge ${typeInfo.class}`}>{typeInfo.text}</span>
+                      </td>
+                      <td>{log.cost > 0 ? `¥${log.cost}` : '-'}</td>
+                      <td>{log.notes || '-'}</td>
+                      <td>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(log.id)}>
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 16, textAlign: 'center', color: 'var(--text-light)', fontSize: 13 }}>
+              共 {logs.length} 条记录
+            </div>
+          </>
         )}
       </div>
 
