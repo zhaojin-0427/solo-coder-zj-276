@@ -18,6 +18,7 @@ function Plants() {
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
   const [filters, setFilters] = useState({ health: '', location: '', species: '' })
   const [formData, setFormData] = useState({
     name: '',
@@ -54,8 +55,19 @@ function Plants() {
     }
   }
 
+  const validateForm = () => {
+    const errors = {}
+    if (!formData.name.trim()) errors.name = '请输入植物昵称'
+    if (!formData.species) errors.species = '请选择品种'
+    if (!formData.location) errors.location = '请选择摆放位置'
+    if (!formData.purchase_date) errors.purchase_date = '请选择购买日期'
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
+    if (!validateForm()) return
     try {
       const submitData = { ...formData }
       Object.keys(submitData).forEach(key => {
@@ -71,6 +83,7 @@ function Plants() {
   }
 
   const resetForm = () => {
+    setFormErrors({})
     setFormData({
       name: '',
       species: '',
@@ -232,11 +245,11 @@ function Plants() {
 
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => { setShowModal(false); resetForm() }}
         title="添加新植物"
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+            <button className="btn btn-secondary" onClick={() => { setShowModal(false); resetForm() }}>
               取消
             </button>
             <button className="btn btn-primary" onClick={handleSubmit}>
@@ -250,41 +263,41 @@ function Plants() {
             <label className="form-label">植物昵称 *</label>
             <input
               type="text"
-              className="form-input"
+              className={`form-input ${formErrors.name ? 'error' : ''}`}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="给它起个名字吧"
-              required
             />
+            {formErrors.name && <div className="form-error">{formErrors.name}</div>}
           </div>
           <div className="grid grid-2">
             <div className="form-group">
               <label className="form-label">品种 *</label>
               <select
-                className="form-select"
+                className={`form-select ${formErrors.species ? 'error' : ''}`}
                 value={formData.species}
                 onChange={(e) => setFormData({ ...formData, species: e.target.value })}
-                required
               >
                 <option value="">请选择品种</option>
                 {species.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
+              {formErrors.species && <div className="form-error">{formErrors.species}</div>}
             </div>
             <div className="form-group">
               <label className="form-label">摆放位置 *</label>
               <select
-                className="form-select"
+                className={`form-select ${formErrors.location ? 'error' : ''}`}
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                required
               >
                 <option value="">请选择位置</option>
                 {locations.map((l) => (
                   <option key={l.id} value={l.id}>{l.room_type_display} - {l.name}</option>
                 ))}
               </select>
+              {formErrors.location && <div className="form-error">{formErrors.location}</div>}
             </div>
           </div>
           <div className="grid grid-2">
@@ -292,11 +305,11 @@ function Plants() {
               <label className="form-label">购买日期 *</label>
               <input
                 type="date"
-                className="form-input"
+                className={`form-input ${formErrors.purchase_date ? 'error' : ''}`}
                 value={formData.purchase_date}
                 onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
-                required
               />
+              {formErrors.purchase_date && <div className="form-error">{formErrors.purchase_date}</div>}
             </div>
             <div className="form-group">
               <label className="form-label">购买成本（元）</label>

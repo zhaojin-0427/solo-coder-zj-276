@@ -23,6 +23,7 @@ function CareLogs() {
   })
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
   const [filters, setFilters] = useState({ plant: '', type: '', start_date: '', end_date: '' })
   const [formData, setFormData] = useState({
     plant: '',
@@ -57,8 +58,28 @@ function CareLogs() {
     }
   }
 
+  const validateForm = () => {
+    const errors = {}
+    if (!formData.plant) errors.plant = '请选择植物'
+    if (!formData.date) errors.date = '请选择日期'
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const resetForm = () => {
+    setFormErrors({})
+    setFormData({
+      plant: '',
+      care_type: 'water',
+      date: new Date().toISOString().split('T')[0],
+      cost: '',
+      notes: '',
+    })
+  }
+
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
+    if (!validateForm()) return
     try {
       const submitData = { ...formData }
       Object.keys(submitData).forEach(key => {
@@ -66,13 +87,7 @@ function CareLogs() {
       })
       await careLogsAPI.create(submitData)
       setShowModal(false)
-      setFormData({
-        plant: '',
-        care_type: 'water',
-        date: new Date().toISOString().split('T')[0],
-        cost: '',
-        notes: '',
-      })
+      resetForm()
       loadData()
     } catch (err) {
       alert('添加失败')
@@ -216,11 +231,11 @@ function CareLogs() {
 
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => { setShowModal(false); resetForm() }}
         title="添加养护记录"
         footer={
           <>
-            <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+            <button className="btn btn-secondary" onClick={() => { setShowModal(false); resetForm() }}>
               取消
             </button>
             <button className="btn btn-primary" onClick={handleSubmit}>
@@ -233,16 +248,16 @@ function CareLogs() {
           <div className="form-group">
             <label className="form-label">植物 *</label>
             <select
-              className="form-select"
+              className={`form-select ${formErrors.plant ? 'error' : ''}`}
               value={formData.plant}
               onChange={(e) => setFormData({ ...formData, plant: e.target.value })}
-              required
             >
               <option value="">请选择植物</option>
               {plants.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
+            {formErrors.plant && <div className="form-error">{formErrors.plant}</div>}
           </div>
           <div className="grid grid-2">
             <div className="form-group">
@@ -251,7 +266,6 @@ function CareLogs() {
                 className="form-select"
                 value={formData.care_type}
                 onChange={(e) => setFormData({ ...formData, care_type: e.target.value })}
-                required
               >
                 <option value="water">💧 浇水</option>
                 <option value="fertilize">🌱 施肥</option>
@@ -264,11 +278,11 @@ function CareLogs() {
               <label className="form-label">日期 *</label>
               <input
                 type="date"
-                className="form-input"
+                className={`form-input ${formErrors.date ? 'error' : ''}`}
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
               />
+              {formErrors.date && <div className="form-error">{formErrors.date}</div>}
             </div>
           </div>
           <div className="form-group">
