@@ -51,7 +51,7 @@ function Statistics() {
     return <div className="card"><p>数据加载失败</p></div>
   }
 
-  const { summary, room_health, health_distribution, repot_distribution, cost_trend, watering_delay_rate } = data
+  const { summary, room_health, health_distribution, repot_distribution, cost_trend, watering_delay_rate, plan_stats } = data
 
   const roomHealthData = room_health.map((r) => ({
     name: r.room,
@@ -99,6 +99,27 @@ function Statistics() {
           <div className="stats-label">总投入成本</div>
         </div>
       </div>
+
+      {plan_stats && (
+        <div className="grid grid-4" style={{ marginBottom: 24 }}>
+          <div className="card stats-card" style={{ borderTop: '4px solid #10b981' }}>
+            <div className="stats-value">{plan_stats.completion_rate || 0}%</div>
+            <div className="stats-label">计划完成率</div>
+          </div>
+          <div className="card stats-card" style={{ borderTop: '4px solid #f97316' }}>
+            <div className="stats-value">{plan_stats.deviation_rate || 0}%</div>
+            <div className="stats-label">执行偏差率</div>
+          </div>
+          <div className="card stats-card" style={{ borderTop: '4px solid #0ea5e9' }}>
+            <div className="stats-value">{plan_stats.avg_deviation_days || 0}</div>
+            <div className="stats-label">平均偏差(天)</div>
+          </div>
+          <div className="card stats-card" style={{ borderTop: '4px solid var(--danger)' }}>
+            <div className="stats-value">{summary.upcoming_risk_count || 0}</div>
+            <div className="stats-label">7天内风险预警</div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-2">
         <div className="card">

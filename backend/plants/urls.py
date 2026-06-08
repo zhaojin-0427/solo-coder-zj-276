@@ -5,6 +5,8 @@ from .views import (
     LocationViewSet,
     PlantViewSet,
     CareLogViewSet,
+    CarePlanViewSet,
+    CarePlanTaskViewSet,
     WateringCalendarView,
     WarningsView,
     StatisticsView,
@@ -15,6 +17,8 @@ router.register(r'species', PlantSpeciesViewSet)
 router.register(r'locations', LocationViewSet)
 router.register(r'plants', PlantViewSet)
 router.register(r'care-logs', CareLogViewSet)
+router.register(r'care-plans', CarePlanViewSet)
+router.register(r'care-plan-tasks', CarePlanTaskViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

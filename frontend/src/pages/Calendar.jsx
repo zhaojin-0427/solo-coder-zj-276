@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
-import { calendarAPI } from '../api.js'
+import { calendarAPI, carePlanTasksAPI } from '../api.js'
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
+
+const careTypeMap = {
+  water: { text: '💧', class: 'calendar-event water' },
+  fertilize: { text: '🌱', class: 'calendar-event fertilize' },
+  repot: { text: '🪴', class: 'calendar-event repot' },
+  prune: { text: '✂️', class: 'calendar-event prune' },
+}
+
+const taskStatusClass = {
+  pending: '',
+  completed: ' completed',
+  skipped: ' skipped',
+  overdue: ' overdue',
+  rescheduled: ' rescheduled',
+}
 
 function Calendar() {
   const navigate = useNavigate()
@@ -75,13 +90,12 @@ function Calendar() {
           <h2 className="calendar-title">
             {currentDate.format('YYYY年 M月')}
           </h2>
-          <div style={{ display: 'flex', gap: 16 }}>
-            <span style={{ fontSize: 13 }}>
-              <span className="badge badge-info">💧 待浇水</span>
-            </span>
-            <span style={{ fontSize: 13 }}>
-              <span className="badge badge-danger">⚠️ 已延迟</span>
-            </span>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13 }}><span className="badge badge-info">💧 浇水</span></span>
+            <span style={{ fontSize: 13 }}><span className="badge badge-success">🌱 施肥</span></span>
+            <span style={{ fontSize: 13 }}><span className="badge badge-warning">🪴 换盆</span></span>
+            <span style={{ fontSize: 13 }}><span className="badge badge-gray">✂️ 修剪</span></span>
+            <span style={{ fontSize: 13 }}><span className="badge badge-danger">⚠️ 已逾期</span></span>
           </div>
         </div>
 
@@ -102,6 +116,8 @@ function Calendar() {
                 const events = calendarData[dateStr] || []
                 const isCurrentMonth = day.month() === currentDate.month()
                 const isToday = day.isSame(dayjs(), 'day')
+                const planEvents = events.filter((e) => e.source === 'plan')
+                const displayEvents = planEvents.length > 0 ? planEvents : events
 
                 return (
                   <div
@@ -109,19 +125,31 @@ function Calendar() {
                     className={`calendar-day ${!isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''}`}
                   >
                     <div className="calendar-day-number">{day.date()}</div>
-                    {events.slice(0, 3).map((event, idx) => (
-                      <div
-                        key={idx}
-                        className={`calendar-event ${event.is_overdue ? 'overdue' : 'water'}`}
-                        onClick={() => navigate(`/plants/${event.plant_id}`)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {event.is_overdue ? '⚠️ ' : '💧 '}{event.plant_name}
-                      </div>
-                    ))}
-                    {events.length > 3 && (
+                    {displayEvents.slice(0, 3).map((event, idx) => {
+                      const icon = event.icon || (event.type === 'water' ? '💧' : '📌')
+                      const isOverdue = event.is_overdue
+                      let eventClass = ''
+                      if (event.source === 'plan') {
+                        eventClass = `calendar-event ${event.type || 'water'}${taskStatusClass[event.status] || ''}`
+                        if (isOverdue) eventClass += ' overdue'
+                      } else {
+                        eventClass = `calendar-event ${isOverdue ? 'overdue' : 'water'}`
+                      }
+                      return (
+                        <div
+                          key={idx}
+                          className={eventClass}
+                          onClick={() => event.task_id ? navigate('/care-plans') : navigate(`/plants/${event.plant_id}`)}
+                          style={{ cursor: 'pointer' }}
+                          title={event.status_label || ''}
+                        >
+                          {isOverdue && !event.icon ? '⚠️ ' : ''}{icon} {event.plant_name}
+                        </div>
+                      )
+                    })}
+                    {displayEvents.length > 3 && (
                       <div style={{ fontSize: 11, color: 'var(--text-light)' }}>
-                        +{events.length - 3} 更多
+                        +{displayEvents.length - 3} 更多
                       </div>
                     )}
                   </div>

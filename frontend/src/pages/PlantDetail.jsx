@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { plantsAPI, careLogsAPI } from '../api.js'
+import { plantsAPI, careLogsAPI, carePlanTasksAPI } from '../api.js'
 import Modal from '../components/Modal.jsx'
 
 const healthBadgeMap = {
@@ -17,6 +17,14 @@ const careTypeMap = {
   repot: { text: '🪴 换盆', class: 'badge-warning' },
   prune: { text: '✂️ 修剪', class: 'badge-gray' },
   other: { text: '📝 其他', class: 'badge-gray' },
+}
+
+const taskStatusMap = {
+  pending: { text: '待执行', class: 'badge-info' },
+  completed: { text: '已完成', class: 'badge-success' },
+  skipped: { text: '已跳过', class: 'badge-gray' },
+  overdue: { text: '已逾期', class: 'badge-danger' },
+  rescheduled: { text: '已改期', class: 'badge-warning' },
 }
 
 function PlantDetail() {
@@ -229,6 +237,87 @@ function PlantDetail() {
             ✂️ 记录修剪
           </button>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h3 className="card-title">📋 即将到来的养护计划</h3>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {plant.plan_deviation_rate !== undefined && (
+              <span className={`badge ${plant.plan_deviation_rate > 20 ? 'badge-warning' : 'badge-success'}`}>
+                执行偏差率: {plant.plan_deviation_rate}%
+              </span>
+            )}
+            {plant.upcoming_tasks_count !== undefined && (
+              <span className="badge badge-info">未来7天: {plant.upcoming_tasks_count} 项</span>
+            )}
+          </div>
+        </div>
+        {(!plant.upcoming_plan_tasks || plant.upcoming_plan_tasks.length === 0) ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">📋</div>
+            <p>暂无养护计划，去养护计划中心生成吧</p>
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ marginTop: 12 }}
+              onClick={() => navigate('/care-plans')}
+            >
+              → 前往养护计划
+            </button>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>计划日期</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plant.upcoming_plan_tasks.map((task) => {
+                const typeInfo = careTypeMap[task.care_type] || careTypeMap.other
+                const statusInfo = taskStatusMap[task.status] || taskStatusMap.pending
+                const handleComplete = async () => {
+                  try {
+                    await carePlanTasksAPI.complete(task.id)
+                    loadPlant()
+                  } catch (err) {
+                    console.error('完成任务失败:', err)
+                  }
+                }
+                const handleSkip = async () => {
+                  if (!confirm('确定跳过？')) return
+                  try {
+                    await carePlanTasksAPI.skip(task.id)
+                    loadPlant()
+                  } catch (err) {
+                    console.error('跳过失败:', err)
+                  }
+                }
+                return (
+                  <tr key={task.id}>
+                    <td>
+                      {task.scheduled_date}
+                      {task.is_overdue && <span className="badge badge-danger" style={{ marginLeft: 8 }}>逾期</span>}
+                    </td>
+                    <td><span className={`badge ${typeInfo.class}`}>{typeInfo.text}</span></td>
+                    <td><span className={`badge ${statusInfo.class}`}>{statusInfo.text}</span></td>
+                    <td>
+                      {(task.status === 'pending' || task.status === 'overdue') && (
+                        <div className="actions">
+                          <button className="btn btn-sm btn-primary" onClick={handleComplete}>完成</button>
+                          <button className="btn btn-sm btn-secondary" onClick={handleSkip}>跳过</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="card">

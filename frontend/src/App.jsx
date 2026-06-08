@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Plants from './pages/Plants.jsx'
 import PlantDetail from './pages/PlantDetail.jsx'
+import CarePlans from './pages/CarePlans.jsx'
 import Calendar from './pages/Calendar.jsx'
 import CareLogs from './pages/CareLogs.jsx'
 import Warnings from './pages/Warnings.jsx'
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Plants />} />
         <Route path="/plants" element={<Plants />} />
         <Route path="/plants/:id" element={<PlantDetail />} />
+        <Route path="/care-plans" element={<CarePlans />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/care-logs" element={<CareLogs />} />
         <Route path="/warnings" element={<Warnings />} />

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 const navItems = [
   { path: '/plants', label: '植物档案', icon: '🌿' },
+  { path: '/care-plans', label: '养护计划中心', icon: '📋' },
   { path: '/calendar', label: '浇水日历', icon: '📅' },
   { path: '/care-logs', label: '养护日志', icon: '📝' },
   { path: '/warnings', label: '枯萎预警', icon: '⚠️' },
