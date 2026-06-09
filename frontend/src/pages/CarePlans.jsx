@@ -87,6 +87,20 @@ function CarePlans() {
     }
   }
 
+  const clearFieldError = (field) => {
+    setFormErrors((prev) => {
+      if (!prev[field]) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }
+
+  const updateFormField = (field, value) => {
+    setGenerateForm((prev) => ({ ...prev, [field]: value }))
+    clearFieldError(field)
+  }
+
   const handleGenerate = async (e) => {
     if (e) e.preventDefault()
     const errors = {}
@@ -167,9 +181,11 @@ function CarePlans() {
     )
   }
 
+  const isTaskActionable = (status) => ['pending', 'overdue', 'rescheduled'].includes(status)
+
   const selectAllPendingTasks = () => {
     const pendingIds = tasks
-      .filter((t) => t.status === 'pending' || t.status === 'overdue')
+      .filter((t) => isTaskActionable(t.status))
       .map((t) => t.id)
     setSelectedTasks(pendingIds)
   }
@@ -227,7 +243,7 @@ function CarePlans() {
     }
   })
 
-  const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'overdue')
+  const pendingTasks = tasks.filter((t) => isTaskActionable(t.status))
   const highRiskWarnings = riskWarnings.filter((w) => w.severity === 'high')
 
   return (
@@ -429,8 +445,8 @@ function CarePlans() {
                   {tasks.map((task) => {
                     const typeInfo = careTypeMap[task.care_type] || careTypeMap.water
                     const statusInfo = taskStatusMap[task.status] || taskStatusMap.pending
-                    const isOverdue = task.is_overdue || (task.status === 'pending' && dayjs(task.scheduled_date).isBefore(dayjs(), 'day'))
-                    const canSelect = task.status === 'pending' || task.status === 'overdue'
+                    const isOverdue = task.is_overdue || (isTaskActionable(task.status) && dayjs(task.scheduled_date).isBefore(dayjs(), 'day'))
+                    const canSelect = isTaskActionable(task.status)
                     return (
                       <tr
                         key={task.id}
@@ -538,8 +554,8 @@ function CarePlans() {
                       ) : (
                         dayTasks.map((task) => {
                           const typeInfo = careTypeMap[task.care_type] || careTypeMap.water
-                          const isOverdue = task.status === 'pending' && day.isBefore(dayjs(), 'day')
-                          const canDrag = task.status === 'pending' || task.status === 'overdue'
+                          const isOverdue = isTaskActionable(task.status) && day.isBefore(dayjs(), 'day')
+                          const canDrag = isTaskActionable(task.status)
                           return (
                             <div
                               key={task.id}
@@ -607,7 +623,7 @@ function CarePlans() {
               type="text"
               className={`form-input ${formErrors.name ? 'error' : ''}`}
               value={generateForm.name}
-              onChange={(e) => setGenerateForm({ ...generateForm, name: e.target.value })}
+              onChange={(e) => updateFormField('name', e.target.value)}
               placeholder="例如：夏季养护计划、客厅绿植计划"
             />
             {formErrors.name && <div className="form-error">{formErrors.name}</div>}
@@ -617,20 +633,28 @@ function CarePlans() {
             <label className="form-label">计划范围</label>
             <div className="grid grid-3" style={{ gap: 8 }}>
               {[
-                { value: 'single', label: '单株植物' },
+                { value: 'single', label: '指定植物' },
                 { value: 'room', label: '按房间批量' },
                 { value: 'all', label: '全部植物' },
               ].map((opt) => (
                 <label
                   key={opt.value}
                   className={`radio-card ${generateForm.scope_type === opt.value ? 'active' : ''}`}
-                  onClick={() => setGenerateForm({ ...generateForm, scope_type: opt.value })}
+                  onClick={() => {
+                    setGenerateForm({ ...generateForm, scope_type: opt.value })
+                    clearFieldError('plant_ids')
+                    clearFieldError('location_id')
+                  }}
                 >
                   <input
                     type="radio"
                     name="scope_type"
                     checked={generateForm.scope_type === opt.value}
-                    onChange={() => setGenerateForm({ ...generateForm, scope_type: opt.value })}
+                    onChange={() => {
+                      setGenerateForm({ ...generateForm, scope_type: opt.value })
+                      clearFieldError('plant_ids')
+                      clearFieldError('location_id')
+                    }}
                     style={{ display: 'none' }}
                   />
                   {opt.label}
@@ -653,6 +677,7 @@ function CarePlans() {
                           ? [...generateForm.plant_ids, p.id]
                           : generateForm.plant_ids.filter((id) => id !== p.id)
                         setGenerateForm({ ...generateForm, plant_ids: newIds })
+                        if (newIds.length > 0) clearFieldError('plant_ids')
                       }}
                     />
                     <span>{p.name} ({p.species_detail?.name})</span>
@@ -669,7 +694,7 @@ function CarePlans() {
               <select
                 className={`form-select ${formErrors.location_id ? 'error' : ''}`}
                 value={generateForm.location_id}
-                onChange={(e) => setGenerateForm({ ...generateForm, location_id: e.target.value })}
+                onChange={(e) => updateFormField('location_id', e.target.value)}
               >
                 <option value="">请选择房间</option>
                 {locations.map((l) => (
@@ -689,7 +714,7 @@ function CarePlans() {
                 type="date"
                 className="form-input"
                 value={generateForm.start_date}
-                onChange={(e) => setGenerateForm({ ...generateForm, start_date: e.target.value })}
+                onChange={(e) => updateFormField('start_date', e.target.value)}
               />
             </div>
             <div className="form-group">
@@ -700,7 +725,7 @@ function CarePlans() {
                 max="90"
                 className="form-input"
                 value={generateForm.days}
-                onChange={(e) => setGenerateForm({ ...generateForm, days: Math.min(90, Math.max(1, parseInt(e.target.value) || 90)) })}
+                onChange={(e) => updateFormField('days', Math.min(90, Math.max(1, parseInt(e.target.value) || 90)))}
               />
             </div>
           </div>
@@ -722,6 +747,7 @@ function CarePlans() {
                       ? generateForm.care_types.filter((t) => t !== opt.value)
                       : [...generateForm.care_types, opt.value]
                     setGenerateForm({ ...generateForm, care_types: newTypes })
+                    if (newTypes.length > 0) clearFieldError('care_types')
                   }}
                 >
                   <input
@@ -742,7 +768,7 @@ function CarePlans() {
             <textarea
               className="form-textarea"
               value={generateForm.notes}
-              onChange={(e) => setGenerateForm({ ...generateForm, notes: e.target.value })}
+              onChange={(e) => updateFormField('notes', e.target.value)}
               placeholder="可选，给计划添加备注说明..."
             />
           </div>
@@ -754,7 +780,7 @@ function CarePlans() {
         onClose={() => setShowTaskDetailModal(false)}
         title="📋 任务详情"
         footer={
-          currentTask && (currentTask.status === 'pending' || currentTask.status === 'overdue') ? (
+          currentTask && isTaskActionable(currentTask.status) ? (
             <>
               <button className="btn btn-secondary" onClick={() => handleTaskSkip(currentTask.id)}>
                 跳过
@@ -821,7 +847,7 @@ function CarePlans() {
               </>
             )}
 
-            {currentTask.status === 'pending' && (
+            {isTaskActionable(currentTask.status) && (
               <>
                 <div className="divider" />
                 <div className="form-group">

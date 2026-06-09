@@ -305,7 +305,7 @@ function PlantDetail() {
                     <td><span className={`badge ${typeInfo.class}`}>{typeInfo.text}</span></td>
                     <td><span className={`badge ${statusInfo.class}`}>{statusInfo.text}</span></td>
                     <td>
-                      {(task.status === 'pending' || task.status === 'overdue') && (
+                      {['pending', 'overdue', 'rescheduled'].includes(task.status) && (
                         <div className="actions">
                           <button className="btn btn-sm btn-primary" onClick={handleComplete}>完成</button>
                           <button className="btn btn-sm btn-secondary" onClick={handleSkip}>跳过</button>

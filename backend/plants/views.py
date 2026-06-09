@@ -483,8 +483,12 @@ class CarePlanTaskViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
         task.scheduled_date = new_date
-        task.status = 'rescheduled' if new_date != task.original_date else task.status
-        task.status = 'pending' if task.status != 'skipped' else 'pending'
+        if new_date != task.original_date:
+            task.status = 'rescheduled'
+        elif task.status == 'skipped':
+            task.status = 'skipped'
+        else:
+            task.status = 'pending'
         task.save()
 
         serializer = self.get_serializer(task)
